@@ -1,14 +1,14 @@
 // Настройки фронтенда. Меняйте только здесь.
 window.APP_CONFIG = {
   // Адрес бэкенда на Railway
-  API_URL: "https://hackathonai-production.up.railway.app",
+  API_URL: "",
 
   // true  — всё работает на демо-данных (бэкенд не нужен)
   // false — запросы идут на реальный бэкенд
-  USE_MOCK: true,
+  USE_MOCK: false,
 
   // Если бэкенд не ответил — показать демо-данные вместо ошибки
-  FALLBACK_TO_MOCK: true,
+  FALLBACK_TO_MOCK: false,
 
   // Тестовые запросы (со скриншота) — показываются под строкой поиска
   EXAMPLE_QUERIES: [

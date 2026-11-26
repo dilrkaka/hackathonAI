@@ -45,19 +45,42 @@
     onDemoChange: (f) => listeners.push(f),
 
     // mode: "smart" | "baseline"
-    async search(query, mode = "smart", limit = 24) {
+    async search(query, mode = "smart", limit = 4) {
       const t0 = performance.now();
+
+      limit = Math.max(4, Math.min(20, limit));
+
       const data = await call(
-        () => http(mode === "baseline" ? "/api/search/baseline" : "/api/search", {
-          method: "POST", body: JSON.stringify({ query, limit })
-        }),
+        () => http(
+          mode === "baseline"
+            ? "/api/search/baseline"
+            : "/api/search/smart",
+          {
+            method: "POST",
+            body: JSON.stringify({ query, limit })
+          }
+        ),
         () => window.Mock.search(query, mode, limit)
       );
-      const items = pick(data, ["items", "results", "products", "data"]);
+
+      const items = pick(data, [
+        "items", "results", "products", "data"
+      ]);
+
       return {
         items,
         total: data.total ?? data.count ?? items.length,
-        tookMs: Math.round(data.took_ms ?? data.tookMs ?? data.time_ms ?? (data.tookMs === undefined ? performance.now() - t0 : 0))
+        tookMs: Math.round(
+          data.processing_time_ms ??
+          data.took_ms ??
+          data.tookMs ??
+          data.time_ms ??
+          (performance.now() - t0)
+        ),
+        normalizedQuery: data.normalized_query ?? query,
+        note: data.note ?? "",
+        fixes: data.fixes ?? [],
+        searchId: data.search_id ?? null
       };
     },
 

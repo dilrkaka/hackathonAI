@@ -11,9 +11,12 @@
     const cur = !currency || currency === "RUB" ? "₽" : currency;
     return new Intl.NumberFormat("ru-RU").format(value) + " " + cur;
   }
+
   function formatPrice(p) {
-    if (p.price == null) return "Цена по запросу";
-    if (Number(p.price) === 0) return "Бесплатно";
+    if (p.price == null || Number(p.price) <= 0) {
+      return "Цена по запросу";
+    }
+
     return money(p.price, p.currency);
   }
 
@@ -41,6 +44,13 @@
     const href = "product.html?id=" + encodeURIComponent(p.id) + (o.query ? "&q=" + encodeURIComponent(o.query) : "");
     const discount = p.old_price > p.price && p.price > 0 ? Math.round((1 - p.price / p.old_price) * 100) : 0;
     const out = p.available === false;
+
+    const roleLabel = {
+      match: "Подходит по запросу",
+      alternative: "Похожий товар",
+      upsell: "Рекомендуем дополнительно"
+    }[p.role] || "";
+
     return `<article class="card" data-id="${esc(p.id)}" data-pos="${o.position ?? ""}">
       <a class="card-link" href="${href}">
         <div class="card-img">
@@ -52,8 +62,13 @@
           <div class="card-cat">${esc(p.category_name || "")}</div>
           <h3 class="card-title">${esc(p.name)}</h3>
           <div class="card-vendor">${esc(p.vendor || "")}</div>
+          ${roleLabel ? `<div class="meta">${esc(roleLabel)}</div>` : ""}
+          ${p.reason ? `<div class="meta">${esc(p.reason)}</div>` : ""}
           <div class="card-foot">
-            <div class="price"><span class="price-now">${esc(formatPrice(p))}</span>${p.old_price > p.price ? `<span class="price-old">${esc(money(p.old_price, p.currency))}</span>` : ""}</div>
+            <div class="price">
+              <span class="price-now">${esc(formatPrice(p))}</span>
+              ${discount ? `<span class="price-old">${esc(money(p.old_price, p.currency))}</span>` : ""}
+            </div>
             <span class="stock ${out ? "out" : "in"}">${out ? "Нет в наличии" : "В наличии"}</span>
           </div>
         </div>
@@ -70,7 +85,12 @@
     container.addEventListener("click", (e) => {
       const c = e.target.closest(".card[data-id]");
       if (!c) return;
-      window.Api.event({ type: "click", product_id: c.dataset.id, position: c.dataset.pos === "" ? null : Number(c.dataset.pos), ...getCtx() });
+      window.Api.event({
+        type: "click",
+        product_id: c.dataset.id,
+        position: c.dataset.pos === "" ? null : Number(c.dataset.pos),
+        ...getCtx()
+      });
     });
   }
 
@@ -80,6 +100,7 @@
       ["compare.html", "Сравнение поиска", "compare"],
       ["analytics.html", "Аналитика", "analytics"]
     ];
+
     $("#app-header").innerHTML = `
       <div class="container header-row">
         <a class="logo" href="index.html">Hackathonai Store</a>
@@ -88,6 +109,7 @@
         </nav>
       </div>
       <div id="demo-banner" class="demo-banner" hidden></div>`;
+
     const footer = $("#app-footer");
     if (footer) footer.innerHTML = `<div class="container">Hackathonai Store. Учебный проект хакатона: умный поиск по каталогу программного обеспечения.</div>`;
 
@@ -98,6 +120,7 @@
         ? "Демо-режим: показаны тестовые данные. Чтобы подключить бэкенд, поменяйте USE_MOCK в js/config.js."
         : "Бэкенд сейчас недоступен, поэтому показаны демонстрационные данные.";
     };
+
     window.Api.onDemoChange(showDemo);
     showDemo(window.Api.isDemo());
   }
