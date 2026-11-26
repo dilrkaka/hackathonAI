@@ -14,3 +14,19 @@ def home():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/health/db")
+def database_health():
+    from backend.app.database import check_connection
+    from fastapi import HTTPException
+
+    try:
+        if check_connection():
+            return {"status": "ok", "database": "connected"}
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=503,
+        detail="Database unavailable"
+    )
