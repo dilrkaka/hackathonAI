@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&subset=cyrillic&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Hackathonai Store: каталог программного обеспечения</title>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<main>
+  <section class="hero">
+    <div class="container">
+      <h1>Программное обеспечение для бизнеса и дома</h1>
+      <p class="lead">Ищите так, как привыкли: «кибер бэкап», «макс патрол», «365». Умный поиск поймёт, что вы имеете в виду.</p>
+
+      <form id="search-form" class="search" role="search" autocomplete="off">
+        <div class="search-field">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Название, производитель или задача" aria-label="Поиск по каталогу"
+                 role="combobox" aria-expanded="false" aria-controls="suggest" aria-autocomplete="list">
+          <ul id="suggest" class="suggest" role="listbox" aria-label="Подсказки" hidden></ul>
+        </div>
+        <button class="btn btn-primary" type="submit">Найти</button>
+      </form>
+
+      <div class="hero-tools">
+        <div class="segmented" id="mode" role="group" aria-label="Режим поиска">
+          <button type="button" data-mode="smart" aria-pressed="true">Умный поиск</button>
+          <button type="button" data-mode="baseline" aria-pressed="false">Обычный поиск</button>
+        </div>
+        <a id="compare-link" class="link" href="compare.html">Сравнить режимы на одном запросе</a>
+      </div>
+      <div class="chips" id="chips" aria-label="Примеры запросов"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="results-title">Популярные товары</h2>
+        <span class="meta" id="results-meta"></span>
+      </div>
+      <div class="grid" id="results" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+<footer id="app-footer" class="footer"></footer>
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

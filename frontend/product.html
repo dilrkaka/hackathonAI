@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&subset=cyrillic&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Товар: Hackathonai Store</title>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<main>
+  <div class="container">
+    <div class="crumbs"><a id="back" href="index.html">К каталогу</a></div>
+    <div id="product"></div>
+    <section id="recs-section" hidden>
+      <h2 class="subhead">С этим товаром покупают</h2>
+      <div class="grid" id="recs"></div>
+    </section>
+    <div style="height:64px"></div>
+  </div>
+</main>
+<footer id="app-footer" class="footer"></footer>
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/product.js"></script>
+</body>
+</html>
