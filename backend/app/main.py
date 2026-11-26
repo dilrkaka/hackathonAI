@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from backend.app.catalog import router as catalog_router
+from backend.app.baseline import router as baseline_router
 
 app = FastAPI(
     title="SoftSearch API",
@@ -7,7 +8,7 @@ app = FastAPI(
 )
 
 app.include_router(catalog_router)
-
+app.include_router(baseline_router)
 
 @app.get("/")
 def home():
