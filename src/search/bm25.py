@@ -15,6 +15,7 @@ class BM25:
         self.idf = {t: math.log(1 + (self.N - len(p) + 0.5) / (len(p) + 0.5)) for t, p in self.inv.items()}
 
     def search(self, q_tokens, k=50):
+        """k=None — вернуть ВСЕ найденные документы (нужно для группировки по семействам)."""
         scores = defaultdict(float)
         for t in set(q_tokens):
             if t not in self.inv:
@@ -22,4 +23,5 @@ class BM25:
             for i, tf in self.inv[t]:
                 denom = tf + self.k1 * (1 - self.b + self.b * self.dl[i] / self.avgdl)
                 scores[i] += self.idf[t] * tf * (self.k1 + 1) / denom
-        return sorted(scores.items(), key=lambda x: -x[1])[:k]
+        ranked = sorted(scores.items(), key=lambda x: -x[1])
+        return ranked if k is None else ranked[:k]

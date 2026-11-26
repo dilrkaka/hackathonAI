@@ -1,7 +1,9 @@
 """Парсинг YML-выгрузки Softline в чистые записи.
 
-В индекс идут только доступные товары (available=true): остальные ~67% каталога
-имеют цену 0 и в выдаче бесполезны.
+По умолчанию в индекс идут ВСЕ товары, а флаг available сохраняется как есть.
+Организаторы подтвердили: недоступные товары (цена 0) — 2-й приоритет, их показываем
+только если не хватает доступных. Поэтому ранжирование (engine.py) сначала ставит
+товары с ценой, а недоступные учитывает с понижающим коэффициентом.
 """
 import json
 import re
@@ -9,7 +11,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
-def parse_catalog(xml_path: str, only_available: bool = True):
+def parse_catalog(xml_path: str, only_available: bool = False):
     cats = {}
     offers = []
     for _, el in ET.iterparse(xml_path, events=("end",)):
@@ -28,7 +30,7 @@ def parse_catalog(xml_path: str, only_available: bool = True):
                     d[c.tag] = c.text or ""
             d["params"] = {c.get("name"): c.text for c in el if c.tag == "param"}
             m = re.match(r"https://store\.softline\.ru/([^/]+)/", d.get("url", ""))
-            d["available"] = True
+            d["available"] = el.get("available") == "true"
             d["vendor_slug"] = m.group(1) if m else ""
             offers.append(d)
             el.clear()
@@ -96,7 +98,7 @@ def to_product(o):
         "price": _num(o.get("price")),
         "old_price": _num(o.get("oldprice")),
         "currency": "RUB",
-        "available": True,
+        "available": bool(o.get("available", True)),
         "image_url": o.get("picture", ""),
         "url": o.get("url", ""),
         "params": params,
