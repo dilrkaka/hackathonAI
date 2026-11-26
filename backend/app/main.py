@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from backend.app.catalog import router as catalog_router
 from backend.app.baseline import router as baseline_router
 from backend.app.search.routes import router as smart_router
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 app = FastAPI(
     title="SoftSearch API",
@@ -14,7 +17,7 @@ app.include_router(smart_router)
 
 @app.get("/")
 def home():
-    return {"message": "SoftSearch API is running"}
+    return RedirectResponse("/store/")
 
 
 @app.get("/health")
@@ -36,3 +39,16 @@ def database_health():
         status_code=503,
         detail="Database unavailable"
     )
+
+FRONTEND_DIR = (
+    Path(__file__).resolve().parents[2] / "frontend"
+)
+
+app.mount(
+    "/store",
+    StaticFiles(
+        directory=str(FRONTEND_DIR),
+        html=True
+    ),
+    name="frontend"
+)
