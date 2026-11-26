@@ -1,9 +1,12 @@
 from fastapi import FastAPI
+from backend.app.catalog import router as catalog_router
 
 app = FastAPI(
     title="SoftSearch API",
     version="0.1.0"
 )
+
+app.include_router(catalog_router)
 
 
 @app.get("/")
