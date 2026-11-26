@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -9,10 +10,20 @@ from backend.app.baseline import router as baseline_router
 from backend.app.search.routes import router as smart_router
 from backend.app.search.suggestions import router as suggestions_router
 from backend.app.recommendations.routes import router as recommendations_router
+from backend.app.analytics.routes import router as analytics_router
+from backend.app.analytics.service import init_analytics
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_analytics()
+    yield
+
 
 app = FastAPI(
     title="SoftSearch API",
-    version="0.1.0"
+    version="0.2.0",
+    lifespan=lifespan
 )
 
 app.include_router(catalog_router)
@@ -20,6 +31,7 @@ app.include_router(baseline_router)
 app.include_router(smart_router)
 app.include_router(suggestions_router)
 app.include_router(recommendations_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")

@@ -7,6 +7,7 @@ from sqlalchemy import select, func, or_, case
 
 from backend.app.database import engine
 from backend.app.models import products, categories
+from backend.app.analytics.service import record_search
 
 router = APIRouter(
     prefix="/api/search",
@@ -67,7 +68,7 @@ def baseline_search(request: SearchRequest):
             rows = conn.execute(stmt).mappings().all()
             total = conn.execute(count_stmt).scalar()
 
-    return {
+    result = {
         "search_id": str(uuid4()),
         "query": request.query,
         "normalized_query": query,
@@ -81,3 +82,7 @@ def baseline_search(request: SearchRequest):
             (perf_counter() - started) * 1000, 2
         )
     }
+
+    record_search(result)
+
+    return result

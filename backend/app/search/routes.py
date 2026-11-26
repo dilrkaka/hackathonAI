@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.app.search.loader import get_search_engine
+from backend.app.analytics.service import record_search
 
 router = APIRouter(
     prefix="/api/search",
@@ -38,7 +39,7 @@ def execute_search(query, limit):
 
     results = out["results"]
 
-    return {
+    result = {
         "search_id": str(uuid4()),
         "query": query,
         "normalized_query": out["corrected"],
@@ -64,6 +65,10 @@ def execute_search(query, limit):
             (perf_counter() - started) * 1000, 2
         )
     }
+
+    record_search(result)
+
+    return result
 
 
 @router.post("/smart")
