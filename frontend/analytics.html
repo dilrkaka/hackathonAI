@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&subset=cyrillic&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Аналитика поиска: Hackathonai Store</title>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<main>
+  <div class="container">
+    <div class="page-head">
+      <h1>Аналитика поиска</h1>
+      <p>Что ищут покупатели и насколько умный поиск справляется лучше обычного.</p>
+    </div>
+    <div class="stats" id="stats" aria-live="polite">
+      <section class="panel">
+        <h2>Число поисков</h2>
+        <p class="hint">За всё время</p>
+        <div class="big-number" id="total">…</div>
+      </section>
+      <section class="panel">
+        <h2>Запросы без результатов</h2>
+        <p class="hint">По ним ничего не нашлось: стоит добавить товары или синонимы</p>
+        <ul class="plain" id="zero"></ul>
+      </section>
+      <section class="panel wide">
+        <h2>Топ-10 запросов</h2>
+        <p class="hint">Самые частые запросы покупателей</p>
+        <ol class="rank" id="top"></ol>
+      </section>
+      <section class="panel wide">
+        <h2>Обычный и умный поиск</h2>
+        <p class="hint">Доля запросов, где поиск справился, в процентах</p>
+        <div class="chart-box"><canvas id="chart" role="img" aria-label="Сравнение обычного и умного поиска"></canvas></div>
+        <p class="meta" id="chart-msg" hidden></p>
+      </section>
+    </div>
+    <div style="height:64px"></div>
+  </div>
+</main>
+<footer id="app-footer" class="footer"></footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/analytics.js"></script>
+</body>
+</html>
