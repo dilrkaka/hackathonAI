@@ -95,6 +95,8 @@ class TestQualityFeatures(unittest.TestCase):
     def test_nothing_found(self):
         out = self.e.search_full("зззззз", log=False)
         self.assertEqual(out["results"], [])
+        self.assertEqual(out["popular_recommendations"], [])  # без признака популярности ничего не выдумываем
+        self.assertIn("ничего не найдено", out["note"].lower())
 
 
 if __name__ == "__main__":

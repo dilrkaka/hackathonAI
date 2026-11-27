@@ -57,6 +57,11 @@ def _product_platforms(p):
     return platforms_of(p.get("params", {}).get("platform", "") + " " + p.get("name", ""))
 
 
+def product_platforms(p):
+    """Платформы товара (windows/linux/...), пустое множество — если не указана."""
+    return _product_platforms(p)
+
+
 def check_product(p, reqs):
     """Возвращает ({'platform': 'ok'|'mismatch'|'unknown', ...}, множитель_оценки)."""
     checks, factor = {}, 1.0

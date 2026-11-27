@@ -55,6 +55,7 @@ def execute_search(query, limit, request_id=None, log=True):
             r for r in results
             if r["role"] == "upsell"
         ],
+        "popular_recommendations": out.get("popular_recommendations", []),
         "alternatives": [
             r for r in results
             if r["role"] == "alternative"
@@ -63,6 +64,7 @@ def execute_search(query, limit, request_id=None, log=True):
         "fixes": out["fixes"],
         "requirements": out["requirements"],
         "note": out["note"],
+        "intent": out.get("intent"),
         "processing_time_ms": round(
             (perf_counter() - started) * 1000, 2
         )
