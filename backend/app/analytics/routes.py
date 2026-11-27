@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from backend.app.database import engine
 from backend.app.analytics.models import search_logs, user_events
@@ -36,15 +37,15 @@ class EventRequest(BaseModel):
     source: str | None = Field(default=None, max_length=100)
     from_product_id: str | None = Field(default=None, max_length=100)
     search_id: str | None = Field(default=None, max_length=100)
+    event_id: str | None = Field(default=None, max_length=100)
 
 
 @router.post("/events", status_code=201)
 def create_event(event: EventRequest):
-    event_id = str(uuid4())
+    event_id = event.event_id or str(uuid4())
 
     with engine.begin() as conn:
-        conn.execute(
-            user_events.insert().values(
+        stmt = pg_insert(user_events).values(
                 id=event_id,
                 type=event.type,
                 query=event.query,
@@ -52,8 +53,8 @@ def create_event(event: EventRequest):
                 product_id=event.product_id,
                 position=event.position,
                 payload=event.model_dump()
-            )
-        )
+            ).on_conflict_do_nothing(index_elements=[user_events.c.id])
+        conn.execute(stmt)
 
     return {
         "status": "ok",
