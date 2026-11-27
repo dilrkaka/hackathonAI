@@ -90,6 +90,7 @@
       items,
       alternatives: products(firstArray(d, ["alternatives", "alternative_products", "alternative_results", "alternative"])),
       recommendations: products(firstArray(d, ["recommendations", "upsell", "upsells", "cross_sell", "related"])),
+      popularRecommendations: products(firstArray(d, ["popular_recommendations"])),
       correctedQuery: corrected,
       intent: label(d.intent ?? d.detected_intent ?? ""),
       categories: (Array.isArray(cats) ? cats : cats ? [cats] : []).map(label).filter(Boolean).slice(0, 4),
@@ -155,6 +156,7 @@
         totalSearches: d.total_searches ?? d.totalSearches ?? d.total ?? 0,
         topQueries: queries(d.top_queries ?? d.topQueries).slice(0, 10),
         zeroResults: queries(d.zero_results ?? d.no_results ?? d.zeroResults ?? d.noResults),
+        weakQueries: queries(d.weak_queries),
         // { labels: [...], baseline: [...], smart: [...] }
         comparison: d.comparison ?? null
       };
