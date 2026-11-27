@@ -8,6 +8,7 @@
 - llliaaanaaa
 - tonechkamilashkamiay
 - polinnn0
+- amnyam3
 
 ## Демонстрационный стенд
 Ссылка будет добавлена после развёртывания.
