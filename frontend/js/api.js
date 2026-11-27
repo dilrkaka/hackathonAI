@@ -92,7 +92,7 @@
       recommendations: products(firstArray(d, ["recommendations", "upsell", "upsells", "cross_sell", "related"])),
       popularRecommendations: products(firstArray(d, ["popular_recommendations"])),
       correctedQuery: corrected,
-      intent: label(d.intent ?? d.detected_intent ?? ""),
+      intent: label(d.intent?.label ?? d.intent ?? d.detected_intent ?? ""),
       categories: (Array.isArray(cats) ? cats : cats ? [cats] : []).map(label).filter(Boolean).slice(0, 4),
       searchId: d.search_id ?? d.searchId ?? null,
       note: typeof d.note === "string" ? d.note : "",

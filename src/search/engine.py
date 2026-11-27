@@ -9,7 +9,7 @@ from .intent import (
     intent_match_type,
     strip_consumed,
 )
-from .normalize import analyze_query, index_tokens, tokenize
+from .normalize import analyze_query, index_tokens, tokenize, corrected_query
 from .query_log import DEFAULT_LOG, log_query
 from .recommend import cross_sell
 from .typos import SpellFixer
@@ -151,10 +151,24 @@ class SearchEngine:
             ):
                 best[family] = (adjusted_score, i)
 
-        top = sorted(
-            best.values(),
-            reverse=True
-        )[:CANDIDATES]
+        ordered = sorted(best.values(), reverse=True)
+        top = ordered[:CANDIDATES]
+
+        # Для комплексного запроса сохраняем кандидатов обеих групп,
+        # даже если одна группа доминирует в исходном рейтинге BM25.
+        if intent and intent["name"] == "dev_laptop" and intent.get("mode") == "balanced":
+            selected = {i for _, i in top}
+            for kind in ("laptop", "software"):
+                count = 0
+                for score, i in ordered:
+                    if intent_match_type(self.offers[i], intent) != kind:
+                        continue
+                    if i not in selected:
+                        top.append((score, i))
+                        selected.add(i)
+                    count += 1
+                    if count >= CANDIDATES:
+                        break
 
         results = []
 
@@ -401,6 +415,21 @@ class SearchEngine:
                 else "Полностью соответствует запросу"
             )
 
+        # Чередуем ноутбуки и ПО для комплексного рабочего места.
+        # Первой идёт группа с наиболее релевантным товаром.
+        if full and intent and intent["name"] == "dev_laptop" and intent.get("mode") == "balanced":
+            laptops = [r for r in full if intent_match_type(r, intent) == "laptop"]
+            software = [r for r in full if intent_match_type(r, intent) == "software"]
+            if laptops and software:
+                first, second = (laptops, software) if laptops[0]["score"] >= software[0]["score"] else (software, laptops)
+                mixed = []
+                for i in range(max(len(first), len(second))):
+                    if i < len(first):
+                        mixed.append(first[i])
+                    if i < len(second):
+                        mixed.append(second[i])
+                full = mixed
+
         if full:
             block = full[:MAIN_SLOTS]
             tail = full[MAIN_SLOTS:] + rest
@@ -523,11 +552,13 @@ class SearchEngine:
         results = results[:top_k]
 
         if not full:
-            note = (
-                "По вашему запросу ничего не найдено "
-                "среди подходящих товаров. Показаны ближайшие "
-                "варианты и отдельно популярные товары."
-            )
+            note = "По вашему запросу ничего не найдено среди подходящих товаров."
+
+            if results:
+                note += " Показаны альтернативные товары."
+
+            if popular_recommendations:
+                note += " Отдельно показаны популярные товары."
         elif len(results) < top_k:
             note = (
                 f"Найдено товаров: {len(results)} "
@@ -538,13 +569,7 @@ class SearchEngine:
 
         out = {
             "query": query,
-            "corrected": (
-                " ".join(
-                    group[0]
-                    for group in analysis["groups"]
-                )
-                or query.lower().strip()
-            ),
+            "corrected": corrected_query(query) if full else query.strip(),
             "fixes": analysis["fixes"],
             "intent": (
                 {

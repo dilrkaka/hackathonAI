@@ -1,9 +1,11 @@
+
 from html import unescape
 from threading import Lock
 from urllib.parse import urlparse
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 
+from backend.app.analytics.models import user_events
 from backend.app.database import engine
 from backend.app.models import products, categories
 from src.search.engine import SearchEngine
@@ -35,6 +37,23 @@ def load_products():
     offers = []
 
     with engine.connect() as conn:
+
+        # Загружаем статистику кликов по товарам.
+        popularity = {
+            row["product_id"]: row["count"]
+            for row in conn.execute(
+                select(
+                    user_events.c.product_id,
+                    func.count().label("count")
+                )
+                .where(
+                    user_events.c.type == "click",
+                    user_events.c.product_id.is_not(None)
+                )
+                .group_by(user_events.c.product_id)
+            ).mappings()
+        }
+
         cats = {
             row["id"]: dict(row)
             for row in conn.execute(
@@ -48,6 +67,13 @@ def load_products():
 
         for row in rows:
             product = dict(row)
+
+            # Популярность определяется реальными
+            # зарегистрированными кликами.
+            product["popularity"] = popularity.get(
+                product["id"], 0
+            )
+            product["is_popular"] = product["popularity"] > 0
 
             for key in ("name", "vendor", "description", "vendor_code"):
                 product[key] = clean(product.get(key))
@@ -98,7 +124,17 @@ def get_search_engine():
         with _lock:
             if _search_engine is None:
                 offers = load_products()
-                print(f"Building index: {len(offers)} products", flush=True)
+
+                print(
+                    f"Building index: {len(offers)} products",
+                    flush=True
+                )
+
+                print(
+                    f"Popular products: "
+                    f"{sum(p['is_popular'] for p in offers)}",
+                    flush=True
+                )
 
                 _search_engine = SearchEngine(
                     offers,
