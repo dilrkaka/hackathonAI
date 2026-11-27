@@ -1,0 +1,13 @@
+﻿mode,query_type,n,ordinary_precision_at4,ordinary_hit_rate,strict_precision_at4,strict_hit_rate,empty_rate,rate_atleast4,mean_count
+baseline,attribute_rich,10,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+baseline,category,10,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+baseline,contextual,10,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+baseline,exact,10,0.25,1.0,0.25,1.0,0.0,0.1,1.7
+baseline,slang_abbreviation,10,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+baseline,typo,10,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+smart,attribute_rich,10,0.175,0.7,0.175,0.7,0.0,1.0,4.0
+smart,category,10,0.45,0.7,0.45,0.7,0.0,1.0,4.0
+smart,contextual,10,0.025,0.1,0.025,0.1,0.0,1.0,4.0
+smart,exact,10,0.225,0.9,0.225,0.9,0.0,1.0,4.0
+smart,slang_abbreviation,10,0.05,0.2,0.05,0.2,0.0,1.0,4.0
+smart,typo,10,0.05,0.2,0.05,0.2,0.0,1.0,4.0

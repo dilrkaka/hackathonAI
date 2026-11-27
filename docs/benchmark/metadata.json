@@ -1,0 +1,13 @@
+{
+  "expected_commit": "0174ad1",
+  "commit_verified": false,
+  "base_url": "https://hackathon-test-production-db3ed6b7.up.railway.app",
+  "n_queries": 60,
+  "limit": 4,
+  "metric_k": 4,
+  "warmup_per_mode": 3,
+  "log": false,
+  "mode_order": "alternating",
+  "relevance": "ID OR category; strict: ID if supplied, else category",
+  "primary_metrics": "successful responses only; legacy includes errors as misses"
+}
