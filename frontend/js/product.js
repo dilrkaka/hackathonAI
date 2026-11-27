@@ -4,7 +4,7 @@
   mountLayout("home");
 
   const id = param("id");
-  const q = param("q");
+  const q = param("q"), searchId = param("sid");
   const root = $("#product");
   if (q) $("#back").href = "index.html?q=" + encodeURIComponent(q);
 
@@ -19,10 +19,14 @@
     try {
       const p = await Api.product(id);
       render(p);
-      Api.event({ type: "product_view", product_id: String(p.id), query: q || null });
+      Api.event({ type: "product_view", product_id: String(p.id), query: q || null, search_id: searchId || null });
       loadRecs(p.id);
     } catch (e) {
-      root.innerHTML = emptyState("Товар не найден", "Возможно, он удалён или ссылка неверна.", '<a class="btn btn-ghost btn-lg" href="index.html">В каталог</a>');
+      if (e && e.status === 404) {
+        root.innerHTML = emptyState("Товар не найден", "Возможно, он удалён или ссылка неверна.", '<a class="btn btn-ghost btn-lg" href="index.html">В каталог</a>');
+      } else {
+        UI.errorState(e, root, load);
+      }
     }
   }
 
@@ -49,20 +53,20 @@
           </div>
           ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ""}
           ${params.length ? `<h2 class="subhead">Характеристики</h2>
-            <table class="params"><tbody>${params.map(([k, v]) => `<tr><th>${esc(PARAM_NAMES[k] || k)}</th><td>${esc(v)}</td></tr>`).join("")}</tbody></table>` : ""}
+            <div class="table-wrap"><table class="params"><tbody>${params.map(([k, v]) => `<tr><th>${esc(PARAM_NAMES[k] || k)}</th><td>${esc(v)}</td></tr>`).join("")}</tbody></table></div>` : ""}
         </div>
       </div>`;
     const buy = $("#buy");
-    if (buy) buy.addEventListener("click", () => Api.event({ type: "buy_click", product_id: String(p.id), query: q || null }));
+    if (buy) buy.addEventListener("click", () => Api.event({ type: "buy_click", product_id: String(p.id), query: q || null, search_id: searchId || null }));
   }
 
   async function loadRecs(pid) {
     try {
       const items = await Api.recommendations(pid);
       if (!items.length) return;
-      $("#recs").innerHTML = items.map((p, i) => card(p, { position: i + 1 })).join("");
+      $("#recs").innerHTML = items.map((p, i) => card(p, { position: i + 1, query: q, searchId })).join("");
       $("#recs-section").hidden = false;
-      trackClicks($("#recs"), () => ({ query: null, source: "recommendations", from_product_id: String(pid) }));
+      trackClicks($("#recs"), () => ({ query: q || null, source: "recommendations", from_product_id: String(pid), search_id: searchId || null }));
     } catch (_) { /* рекомендации необязательны */ }
   }
 

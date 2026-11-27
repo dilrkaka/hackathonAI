@@ -5,7 +5,8 @@
 
   const form = $("#compare-form"), input = $("#q");
   const columns = $("#columns"), verdict = $("#verdict");
-  const resBase = $("#res-base"), resSmart = $("#res-smart");
+  const resBase = $("#res-base"), resSmart = $("#res-smart"), noteSmart = $("#note-smart");
+  let baselineSearchId = null, smartSearchId = null;
   let currentQuery = "", reqId = 0;
 
   $("#chips").innerHTML = APP_CONFIG.EXAMPLE_QUERIES.map((q) => `<button type="button" class="chip">${esc(q)}</button>`).join("");
@@ -36,18 +37,21 @@
     const id = ++reqId;
 
     try {
-      const [base, smart] = await Promise.all([Api.search(q, "baseline"), Api.search(q, "smart")]);
+      const [base, smart] = await Promise.all([Api.search(q, "baseline", APP_CONFIG.PAGE_SIZE || 20, { log: false }), Api.search(q, "smart", APP_CONFIG.PAGE_SIZE || 20, { log: false })]);
       if (id !== reqId) return;
       const baseIds = new Set(base.items.map((p) => String(p.id)));
+      baselineSearchId = base.searchId; smartSearchId = smart.searchId;
+      noteSmart.textContent = smart.note || "";
+      noteSmart.hidden = !smart.note;
 
       $("#meta-base").textContent = `Найдено: ${base.items.length}. ${base.tookMs} мс`;
       $("#meta-smart").textContent = `Найдено: ${smart.items.length}. ${smart.tookMs} мс`;
 
       resBase.innerHTML = base.items.length
-        ? base.items.map((p, i) => card(p, { query: q, position: i + 1 })).join("")
+        ? base.items.map((p, i) => card(p, { query: q, searchId: base.searchId, position: i + 1 })).join("")
         : emptyState("Ничего не нашлось", "Обычный поиск ищет только точное совпадение в названии.");
       resSmart.innerHTML = smart.items.length
-        ? smart.items.map((p, i) => card(p, { query: q, position: i + 1, badge: baseIds.has(String(p.id)) ? "" : "Только в умном поиске" })).join("")
+        ? smart.items.map((p, i) => card(p, { query: q, searchId: smart.searchId, position: i + 1, badge: baseIds.has(String(p.id)) ? "" : "Только в умном поиске" })).join("")
         : emptyState("Ничего не нашлось", "Даже умный поиск не нашёл подходящих товаров. Такие запросы попадают в аналитику.");
 
       const extra = smart.items.filter((p) => !baseIds.has(String(p.id))).length;
@@ -56,16 +60,18 @@
         ? `По запросу «${q}» умный поиск нашёл ${extra} ${plural(extra, "товар", "товара", "товаров")}, которых нет в обычной выдаче.`
         : `По запросу «${q}» оба режима вернули одинаковые товары.`;
 
+      if (smart.correctedQuery) verdict.textContent += ` Умный поиск исправил запрос на «${smart.correctedQuery}».`;
       Api.event({ type: "compare", query: q, baseline_count: base.items.length, smart_count: smart.items.length });
     } catch (err) {
       if (id !== reqId) return;
       verdict.hidden = false;
-      verdict.textContent = "Не удалось выполнить сравнение: сервер не ответил. Повторите запрос позже.";
+      verdict.textContent = "Не удалось выполнить сравнение. " + UI.describeError(err).join(" ");
       columns.hidden = true;
     }
   }
 
-  trackClicks($("#columns"), () => ({ query: currentQuery, source: "compare" }));
+  trackClicks(resBase, () => ({ query: currentQuery, source: "compare", mode: "baseline", search_id: baselineSearchId }));
+  trackClicks(resSmart, () => ({ query: currentQuery, source: "compare", mode: "smart", search_id: smartSearchId }));
 
   const initial = param("q");
   if (initial) { input.value = initial; run(initial); }

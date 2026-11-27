@@ -62,7 +62,7 @@
       renderZero(d.zeroResults);
       renderChart(d.comparison);
     } catch (e) {
-      $("#stats").innerHTML = emptyState("Не удалось загрузить аналитику", "Сервер не ответил. Обновите страницу через минуту.");
+      UI.errorState(e, $("#stats"), () => location.reload());
     }
   }
   load();
