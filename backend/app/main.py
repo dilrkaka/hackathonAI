@@ -1,16 +1,77 @@
-from fastapi import FastAPI
+from pathlib import Path
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+
+from backend.app.catalog import router as catalog_router
+from backend.app.baseline import router as baseline_router
+from backend.app.search.routes import router as smart_router
+from backend.app.search.suggestions import router as suggestions_router
+from backend.app.recommendations.routes import router as recommendations_router
+from backend.app.analytics.routes import router as analytics_router
+from backend.app.analytics.service import init_analytics
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_analytics()
+    yield
+
 
 app = FastAPI(
     title="SoftSearch API",
-    version="0.1.0"
+    version="0.2.0",
+    lifespan=lifespan
 )
+
+app.include_router(catalog_router)
+app.include_router(baseline_router)
+app.include_router(smart_router)
+app.include_router(suggestions_router)
+app.include_router(recommendations_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")
 def home():
-    return {"message": "SoftSearch API is running"}
+    return RedirectResponse("/store/")
 
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/health/db")
+def database_health():
+    from backend.app.database import check_connection
+
+    try:
+        if check_connection():
+            return {
+                "status": "ok",
+                "database": "connected"
+            }
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=503,
+        detail="Database unavailable"
+    )
+
+
+FRONTEND_DIR = (
+    Path(__file__).resolve().parents[2] / "frontend"
+)
+
+app.mount(
+    "/store",
+    StaticFiles(
+        directory=str(FRONTEND_DIR),
+        html=True
+    ),
+    name="frontend"
+)

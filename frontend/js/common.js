@@ -38,10 +38,10 @@
   // Карточка товара. options: { query, position, badge }
   function card(p, o = {}) {
     const ph = placeholder(p.name);
-    const href = "product.html?id=" + encodeURIComponent(p.id) + (o.query ? "&q=" + encodeURIComponent(o.query) : "");
+    const href = "product.html?id=" + encodeURIComponent(p.id) + (o.query ? "&q=" + encodeURIComponent(o.query) : "") + (o.searchId ? "&sid=" + encodeURIComponent(o.searchId) : "");
     const discount = p.old_price > p.price && p.price > 0 ? Math.round((1 - p.price / p.old_price) * 100) : 0;
     const out = p.available === false;
-    return `<article class="card" data-id="${esc(p.id)}" data-pos="${o.position ?? ""}">
+    return `<article class="card" data-id="${esc(p.id)}" data-pos="${o.position ?? ""}" data-sid="${esc(o.searchId || "")}">
       <a class="card-link" href="${href}">
         <div class="card-img">
           <img src="${esc(p.image_url || ph)}" data-ph="${ph}" alt="" loading="lazy">
@@ -70,7 +70,8 @@
     container.addEventListener("click", (e) => {
       const c = e.target.closest(".card[data-id]");
       if (!c) return;
-      window.Api.event({ type: "click", product_id: c.dataset.id, position: c.dataset.pos === "" ? null : Number(c.dataset.pos), ...getCtx() });
+      const ctx = getCtx();
+      window.Api.event({ type: "click", product_id: c.dataset.id, position: c.dataset.pos === "" ? null : Number(c.dataset.pos), ...ctx, search_id: c.dataset.sid || ctx.search_id || null });
     });
   }
 
@@ -106,5 +107,28 @@
     return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(text)}</p>${extra}</div>`;
   }
 
-  window.UI = { $, $$, esc, param, debounce, money, formatPrice, placeholder, card, skeletons, trackClicks, mountLayout, emptyState };
+  // Человеческое описание ошибки: [заголовок, пояснение]
+  function describeError(e) {
+    if (!navigator.onLine) return ["Нет подключения к интернету", "Проверьте сеть и повторите попытку."];
+    switch (e && e.kind) {
+      case "timeout": return ["Сервер отвечает слишком долго", "Повторите запрос через несколько секунд."];
+      case "network": return ["Не удалось связаться с сервером", "Возможно, он перезапускается. Повторите попытку через минуту."];
+      case "parse": return ["Сервер вернул непонятный ответ", "Сообщите об этом бэкенд-разработчикам."];
+    }
+    const st = e && e.status;
+    if (st === 404) return ["Ничего не найдено", "Такой страницы или товара не существует."];
+    if (st === 400 || st === 422) return ["Запрос не принят сервером", "Попробуйте изменить формулировку."];
+    if (st >= 500) return ["Ошибка на стороне сервера", "Повторите попытку чуть позже."];
+    return ["Что-то пошло не так", "Повторите попытку."];
+  }
+
+  // Блок ошибки с кнопкой «Повторить»; onRetry вызывается по клику
+  function errorState(e, container, onRetry) {
+    const [t, d] = describeError(e);
+    container.innerHTML = emptyState(t, d, onRetry ? '<button class="btn btn-ghost" data-retry type="button">Повторить</button>' : "");
+    const b = container.querySelector("[data-retry]");
+    if (b) b.addEventListener("click", onRetry);
+  }
+
+  window.UI = { describeError, errorState, $, $$, esc, param, debounce, money, formatPrice, placeholder, card, skeletons, trackClicks, mountLayout, emptyState };
 })();
