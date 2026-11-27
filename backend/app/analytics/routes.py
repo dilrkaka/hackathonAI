@@ -1,3 +1,4 @@
+
 from typing import Literal
 from uuid import uuid4
 
@@ -7,6 +8,7 @@ from sqlalchemy import select, func
 
 from backend.app.database import engine
 from backend.app.analytics.models import search_logs, user_events
+
 
 router = APIRouter(
     prefix="/api",
@@ -23,19 +25,53 @@ class EventRequest(BaseModel):
         "compare"
     ]
 
-    query: str | None = Field(default=None, max_length=500)
+    query: str | None = Field(
+        default=None,
+        max_length=500
+    )
+
     mode: Literal["baseline", "smart"] | None = None
 
-    product_id: str | None = Field(default=None, max_length=100)
-    position: int | None = Field(default=None, ge=1, le=100)
-    results_count: int | None = Field(default=None, ge=0)
+    product_id: str | None = Field(
+        default=None,
+        max_length=100
+    )
 
-    baseline_count: int | None = Field(default=None, ge=0)
-    smart_count: int | None = Field(default=None, ge=0)
+    position: int | None = Field(
+        default=None,
+        ge=1,
+        le=100
+    )
 
-    source: str | None = Field(default=None, max_length=100)
-    from_product_id: str | None = Field(default=None, max_length=100)
-    search_id: str | None = Field(default=None, max_length=100)
+    results_count: int | None = Field(
+        default=None,
+        ge=0
+    )
+
+    baseline_count: int | None = Field(
+        default=None,
+        ge=0
+    )
+
+    smart_count: int | None = Field(
+        default=None,
+        ge=0
+    )
+
+    source: str | None = Field(
+        default=None,
+        max_length=100
+    )
+
+    from_product_id: str | None = Field(
+        default=None,
+        max_length=100
+    )
+
+    search_id: str | None = Field(
+        default=None,
+        max_length=100
+    )
 
 
 @router.post("/events", status_code=201)
@@ -65,7 +101,10 @@ def count_rate(value, total):
     if not total:
         return None
 
-    return round(value / total * 100, 2)
+    return round(
+        value / total * 100,
+        2
+    )
 
 
 @router.get("/analytics")
@@ -77,10 +116,8 @@ def analytics():
     )
 
     with engine.connect() as conn:
-
         total_searches = conn.execute(
-            select(func.count())
-            .select_from(search_logs)
+            select(func.count()).select_from(search_logs)
         ).scalar()
 
         top_queries = conn.execute(
@@ -93,17 +130,29 @@ def analytics():
             .limit(10)
         ).mappings().all()
 
+        # Неудачный Smart-поиск — отсутствие основных совпадений.
+        # Альтернативы и допродажи не считаются основными совпадениями.
+        zero_condition = (
+            (search_logs.c.mode == "smart")
+            & (search_logs.c.match_count == 0)
+        ) | (
+            (search_logs.c.mode == "baseline")
+            & (search_logs.c.returned_count == 0)
+        )
+
         zero_results = conn.execute(
             select(
                 query_key.label("query"),
                 func.count().label("count")
             )
-            .where(search_logs.c.returned_count == 0)
+            .where(zero_condition)
             .group_by(query_key)
             .order_by(func.count().desc())
             .limit(20)
         ).mappings().all()
 
+        # Слабый запрос — найдено ровно одно основное совпадение.
+        # Запросы с нулём совпадений учитываются отдельно.
         weak_queries = conn.execute(
             select(
                 query_key.label("query"),
@@ -111,7 +160,7 @@ def analytics():
             )
             .where(
                 search_logs.c.mode == "smart",
-                search_logs.c.match_count == 0,
+                search_logs.c.match_count == 1,
                 search_logs.c.returned_count > 0
             )
             .group_by(query_key)
@@ -133,7 +182,7 @@ def analytics():
                 .select_from(search_logs)
                 .where(
                     condition,
-                    search_logs.c.returned_count == 0
+                    zero_condition
                 )
             ).scalar()
 
@@ -148,7 +197,9 @@ def analytics():
 
             avg_time = conn.execute(
                 select(
-                    func.avg(search_logs.c.processing_time_ms)
+                    func.avg(
+                        search_logs.c.processing_time_ms
+                    )
                 )
                 .where(condition)
             ).scalar()
@@ -157,8 +208,18 @@ def analytics():
                 "searches": total,
                 "zero_results": zero,
                 "zero_rate": count_rate(zero, total),
-                "non_empty_rate": count_rate(total - zero, total),
-                "four_results_rate": count_rate(four, total),
+                "successful_rate": count_rate(
+                    total - zero,
+                    total
+                ),
+                "non_empty_rate": count_rate(
+                    total - zero,
+                    total
+                ),
+                "four_results_rate": count_rate(
+                    four,
+                    total
+                ),
                 "avg_time_ms": (
                     round(float(avg_time), 2)
                     if avg_time is not None
@@ -201,8 +262,8 @@ def analytics():
     if baseline["searches"] and smart["searches"]:
         comparison = {
             "labels": [
-                "Непустая выдача",
-                "4 и более товаров",
+                "Успешный поиск (есть основные совпадения)",
+                "4 и более показанных товаров",
                 "Пустая выдача"
             ],
             "baseline": [
@@ -219,9 +280,18 @@ def analytics():
 
     return {
         "total_searches": total_searches,
-        "top_queries": [dict(row) for row in top_queries],
-        "zero_results": [dict(row) for row in zero_results],
-        "weak_queries": [dict(row) for row in weak_queries],
+        "top_queries": [
+            dict(row)
+            for row in top_queries
+        ],
+        "zero_results": [
+            dict(row)
+            for row in zero_results
+        ],
+        "weak_queries": [
+            dict(row)
+            for row in weak_queries
+        ],
         "modes": mode_stats,
         "comparison": comparison,
         "events": {
@@ -231,6 +301,7 @@ def analytics():
             "comparisons": events.get("compare", 0)
         },
         "popular_products": [
-            dict(row) for row in popular_products
+            dict(row)
+            for row in popular_products
         ]
     }

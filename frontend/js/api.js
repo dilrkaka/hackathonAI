@@ -69,6 +69,7 @@
 
       return {
         items,
+        popularRecommendations: data.popular_recommendations ?? [],
         total: data.total ?? data.count ?? items.length,
         tookMs: Math.round(
           data.processing_time_ms ??

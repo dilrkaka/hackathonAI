@@ -116,13 +116,16 @@
       const r = await Api.search(q, mode);
       if (id !== reqId) return;
       meta.textContent = `Найдено: ${r.total}. Время ответа: ${r.tookMs} мс. Режим: ${mode === "smart" ? "умный поиск" : "обычный поиск"}`;
+      const popularHtml = r.popularRecommendations?.length
+        ? `<section class="popular-fallback"><h3>Популярные товары</h3><p>По вашему запросу ничего не найдено. Эти товары показаны отдельно и не являются результатами поиска.</p><div class="grid">${r.popularRecommendations.map((p, i) => card(p, { position: i + 1 })).join("")}</div></section>`
+        : "";
       if (!r.items.length) {
         const extra = mode === "baseline" ? '<button class="btn btn-ghost" id="to-smart" type="button">Попробовать умный поиск</button>' : "";
-        grid.innerHTML = emptyState("Ничего не нашлось", "Проверьте написание или попробуйте другое название. Примеры запросов есть под строкой поиска.", extra);
+        grid.innerHTML = emptyState("Ничего не нашлось", r.note || "Проверьте написание или попробуйте другое название.", extra) + popularHtml;
         const b = $("#to-smart");
         if (b) b.addEventListener("click", () => { mode = "smart"; paintMode(); runSearch(q); });
       } else {
-        grid.innerHTML = r.items.map((p, i) => card(p, { query: q, position: i + 1 })).join("");
+        grid.innerHTML = r.items.map((p, i) => card(p, { query: q, position: i + 1 })).join("") + popularHtml;
       }
       Api.event({ type: "search", query: q, mode, results_count: r.items.length });
     } catch (err) {
