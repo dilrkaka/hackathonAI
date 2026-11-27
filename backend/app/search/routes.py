@@ -16,9 +16,11 @@ router = APIRouter(
 class SmartSearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=500)
     limit: int = Field(default=4, ge=4, le=20)
+    request_id: str | None = Field(default=None, max_length=100)
+    log: bool = True
 
 
-def execute_search(query, limit):
+def execute_search(query, limit, request_id=None, log=True):
     query = query.strip()
 
     if not query:
@@ -40,7 +42,7 @@ def execute_search(query, limit):
     results = out["results"]
 
     result = {
-        "search_id": str(uuid4()),
+        "search_id": request_id or str(uuid4()),
         "query": query,
         "normalized_query": out["corrected"],
         "mode": "smart",
@@ -68,7 +70,8 @@ def execute_search(query, limit):
         )
     }
 
-    record_search(result)
+    if log:
+        record_search(result)
 
     return result
 
@@ -77,7 +80,9 @@ def execute_search(query, limit):
 def smart_search(request: SmartSearchRequest):
     return execute_search(
         request.query,
-        request.limit
+        request.limit,
+        request.request_id,
+        request.log
     )
 
 

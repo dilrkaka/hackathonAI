@@ -180,3 +180,35 @@ a:hover { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Плашка исправления запроса и подсказки о запросе */
+.notice { background: var(--blue-soft); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; }
+.notice p { margin: 0; }
+.notice p + p { margin-top: 4px; }
+.notice-sub { color: var(--muted); font-size: 14px; }
+.notice-fix { border-left: 4px solid var(--blue); }
+.more { display: flex; justify-content: center; margin-top: 28px; }
+.block { margin-top: 44px; }
+.block .subhead { margin-top: 0; }
+.block > .meta { margin: 4px 0 16px; }
+.table-wrap { overflow-x: auto; max-width: 560px; }
+.table-wrap .params { min-width: 360px; }
+.btn:disabled { opacity: .6; cursor: default; }
+.grid > *, .columns > *, .product > * { min-width: 0; }
+.card-title { overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+  .container { width: calc(100% - 32px); }
+  .hero { padding: 32px 0 24px; }
+  .lead { font-size: 16px; margin-bottom: 22px; }
+  .grid { grid-template-columns: 1fr; }
+  .hero-tools { gap: 12px; }
+  .segmented { width: 100%; }
+  .segmented button { flex: 1; }
+  .buy-box { padding: 18px; }
+  .buy-box .btn { width: 100%; }
+  .section-head h2 { font-size: 22px; }
+  .panel { padding: 18px; }
+  .chart-box { height: 280px; }
+  .column { padding: 14px; }
+}

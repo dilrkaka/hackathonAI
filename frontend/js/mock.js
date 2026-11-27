@@ -121,8 +121,22 @@
   const mock = {
     async search(query, mode, limit = 24) {
       await wait();
-      const found = (mode === "baseline" ? baselineMatch(query) : smartMatch(query)).slice(0, limit);
-      return { items: found.map(clean), total: found.length, tookMs: mode === "baseline" ? 12 + Math.round(Math.random() * 10) : 40 + Math.round(Math.random() * 30) };
+      // Демо исправления опечаток (только умный поиск)
+      const CORRECTIONS = { "каспрский": "kaspersky", "микрософт офис": "microsoft office", "антивирс": "антивирус", "эни дэск": "anydesk" };
+      let q = query, corrected = null;
+      if (mode !== "baseline" && CORRECTIONS[norm(query)]) { corrected = CORRECTIONS[norm(query)]; q = corrected; }
+      const found = (mode === "baseline" ? baselineMatch(q) : smartMatch(q)).slice(0, limit);
+      // Альтернативы: другие товары той же категории, что и первый результат
+      const alts = mode !== "baseline" && found.length
+        ? PRODUCTS.filter((p) => !found.includes(p) && p.category_name === found[0].category_name).slice(0, 3)
+        : [];
+      return {
+        items: found.map(clean), alternatives: alts.map(clean), corrected_query: corrected,
+        intent: mode !== "baseline" && found.length ? "Поиск программного обеспечения" : "",
+        categories: mode !== "baseline" && found.length ? [found[0].category_name] : [],
+        total: found.length,
+        tookMs: mode === "baseline" ? 12 + Math.round(Math.random() * 10) : 40 + Math.round(Math.random() * 30)
+      };
     },
 
     async suggestions(q) {

@@ -11,12 +11,9 @@
     const cur = !currency || currency === "RUB" ? "₽" : currency;
     return new Intl.NumberFormat("ru-RU").format(value) + " " + cur;
   }
-
   function formatPrice(p) {
-    if (p.price == null || Number(p.price) <= 0) {
-      return "Цена по запросу";
-    }
-
+    if (p.price == null) return "Цена по запросу";
+    if (Number(p.price) === 0) return "Бесплатно";
     return money(p.price, p.currency);
   }
 
@@ -41,17 +38,10 @@
   // Карточка товара. options: { query, position, badge }
   function card(p, o = {}) {
     const ph = placeholder(p.name);
-    const href = "product.html?id=" + encodeURIComponent(p.id) + (o.query ? "&q=" + encodeURIComponent(o.query) : "");
+    const href = "product.html?id=" + encodeURIComponent(p.id) + (o.query ? "&q=" + encodeURIComponent(o.query) : "") + (o.searchId ? "&sid=" + encodeURIComponent(o.searchId) : "");
     const discount = p.old_price > p.price && p.price > 0 ? Math.round((1 - p.price / p.old_price) * 100) : 0;
     const out = p.available === false;
-
-    const roleLabel = {
-      match: "Подходит по запросу",
-      alternative: "Похожий товар",
-      upsell: "Рекомендуем дополнительно"
-    }[p.role] || "";
-
-    return `<article class="card" data-id="${esc(p.id)}" data-pos="${o.position ?? ""}">
+    return `<article class="card" data-id="${esc(p.id)}" data-pos="${o.position ?? ""}" data-sid="${esc(o.searchId || "")}">
       <a class="card-link" href="${href}">
         <div class="card-img">
           <img src="${esc(p.image_url || ph)}" data-ph="${ph}" alt="" loading="lazy">
@@ -62,13 +52,8 @@
           <div class="card-cat">${esc(p.category_name || "")}</div>
           <h3 class="card-title">${esc(p.name)}</h3>
           <div class="card-vendor">${esc(p.vendor || "")}</div>
-          ${roleLabel ? `<div class="meta">${esc(roleLabel)}</div>` : ""}
-          ${p.reason ? `<div class="meta">${esc(p.reason)}</div>` : ""}
           <div class="card-foot">
-            <div class="price">
-              <span class="price-now">${esc(formatPrice(p))}</span>
-              ${discount ? `<span class="price-old">${esc(money(p.old_price, p.currency))}</span>` : ""}
-            </div>
+            <div class="price"><span class="price-now">${esc(formatPrice(p))}</span>${p.old_price > p.price ? `<span class="price-old">${esc(money(p.old_price, p.currency))}</span>` : ""}</div>
             <span class="stock ${out ? "out" : "in"}">${out ? "Нет в наличии" : "В наличии"}</span>
           </div>
         </div>
@@ -85,12 +70,8 @@
     container.addEventListener("click", (e) => {
       const c = e.target.closest(".card[data-id]");
       if (!c) return;
-      window.Api.event({
-        type: "click",
-        product_id: c.dataset.id,
-        position: c.dataset.pos === "" ? null : Number(c.dataset.pos),
-        ...getCtx()
-      });
+      const ctx = getCtx();
+      window.Api.event({ type: "click", product_id: c.dataset.id, position: c.dataset.pos === "" ? null : Number(c.dataset.pos), ...ctx, search_id: c.dataset.sid || ctx.search_id || null });
     });
   }
 
@@ -100,7 +81,6 @@
       ["compare.html", "Сравнение поиска", "compare"],
       ["analytics.html", "Аналитика", "analytics"]
     ];
-
     $("#app-header").innerHTML = `
       <div class="container header-row">
         <a class="logo" href="index.html">Hackathonai Store</a>
@@ -109,7 +89,6 @@
         </nav>
       </div>
       <div id="demo-banner" class="demo-banner" hidden></div>`;
-
     const footer = $("#app-footer");
     if (footer) footer.innerHTML = `<div class="container">Hackathonai Store. Учебный проект хакатона: умный поиск по каталогу программного обеспечения.</div>`;
 
@@ -120,7 +99,6 @@
         ? "Демо-режим: показаны тестовые данные. Чтобы подключить бэкенд, поменяйте USE_MOCK в js/config.js."
         : "Бэкенд сейчас недоступен, поэтому показаны демонстрационные данные.";
     };
-
     window.Api.onDemoChange(showDemo);
     showDemo(window.Api.isDemo());
   }
@@ -129,5 +107,28 @@
     return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(text)}</p>${extra}</div>`;
   }
 
-  window.UI = { $, $$, esc, param, debounce, money, formatPrice, placeholder, card, skeletons, trackClicks, mountLayout, emptyState };
+  // Человеческое описание ошибки: [заголовок, пояснение]
+  function describeError(e) {
+    if (!navigator.onLine) return ["Нет подключения к интернету", "Проверьте сеть и повторите попытку."];
+    switch (e && e.kind) {
+      case "timeout": return ["Сервер отвечает слишком долго", "Повторите запрос через несколько секунд."];
+      case "network": return ["Не удалось связаться с сервером", "Возможно, он перезапускается. Повторите попытку через минуту."];
+      case "parse": return ["Сервер вернул непонятный ответ", "Сообщите об этом бэкенд-разработчикам."];
+    }
+    const st = e && e.status;
+    if (st === 404) return ["Ничего не найдено", "Такой страницы или товара не существует."];
+    if (st === 400 || st === 422) return ["Запрос не принят сервером", "Попробуйте изменить формулировку."];
+    if (st >= 500) return ["Ошибка на стороне сервера", "Повторите попытку чуть позже."];
+    return ["Что-то пошло не так", "Повторите попытку."];
+  }
+
+  // Блок ошибки с кнопкой «Повторить»; onRetry вызывается по клику
+  function errorState(e, container, onRetry) {
+    const [t, d] = describeError(e);
+    container.innerHTML = emptyState(t, d, onRetry ? '<button class="btn btn-ghost" data-retry type="button">Повторить</button>' : "");
+    const b = container.querySelector("[data-retry]");
+    if (b) b.addEventListener("click", onRetry);
+  }
+
+  window.UI = { describeError, errorState, $, $$, esc, param, debounce, money, formatPrice, placeholder, card, skeletons, trackClicks, mountLayout, emptyState };
 })();
