@@ -2,6 +2,7 @@ import logging
 
 from backend.app.database import engine
 from backend.app.analytics.models import metadata, search_logs
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,7 @@ def record_search(result):
 
     try:
         with engine.begin() as conn:
-            conn.execute(
-                search_logs.insert().values(
+            stmt = pg_insert(search_logs).values(
                     id=result["search_id"],
                     query=query,
                     normalized_query=result.get("normalized_query"),
@@ -45,8 +45,8 @@ def record_search(result):
                         str(p["id"]) for p in items
                     ],
                     fixes=result.get("fixes", [])
-                )
-            )
+                ).on_conflict_do_nothing(index_elements=[search_logs.c.id])
+            conn.execute(stmt)
 
     except Exception:
         logger.exception("Failed to save search log")

@@ -18,6 +18,8 @@ router = APIRouter(
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=500)
     limit: int = Field(default=12, ge=4, le=100)
+    request_id: str | None = Field(default=None, max_length=100)
+    log: bool = True
 
 
 @router.post("/baseline")
@@ -69,7 +71,7 @@ def baseline_search(request: SearchRequest):
             total = conn.execute(count_stmt).scalar()
 
     result = {
-        "search_id": str(uuid4()),
+        "search_id": request.request_id or str(uuid4()),
         "query": request.query,
         "normalized_query": query,
         "mode": "baseline",
@@ -83,6 +85,7 @@ def baseline_search(request: SearchRequest):
         )
     }
 
-    record_search(result)
+    if request.log:
+        record_search(result)
 
     return result
